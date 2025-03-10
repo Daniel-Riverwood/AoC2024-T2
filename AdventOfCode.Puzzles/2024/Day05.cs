@@ -1,3 +1,4 @@
+using SuperLinq;
 using Utilities;
 
 namespace AdventOfCode.Puzzles._2024;
@@ -62,35 +63,42 @@ public class Day05 : IPuzzle
         }
         return $"{sum}";
     }
-    private string ProcessInput2(string[] input)
-    {
-        if(invalids.Count == 0)
-        {
-            ProcessInput1(input);
-        }
-        int sum = 0;
+	private string ProcessInput2(string[] input)
+	{
+		if (invalids.Count == 0)
+		{
+			ProcessInput1(input);
+		}
+		int sum = 0;
 
-        for (var x = 0; x < invalids.Count; x++)
-        {
-            for (int i = 0; i < invalids[x].Count - 1; i++)
-                for (int j = 0; j < invalids[x].Count - i - 1; j++)
-                {
-                    var checkval = invalids[x][j];
-                    var hasChecks = order.FindAll(q => q.Item2 == checkval);
-                    foreach (var check in hasChecks)
-                    {
-                        var checkind = invalids[x].IndexOf(check.Item1);
-                        if (checkind > j)
-                        {
-                            var newval = invalids[x][j];
-                            invalids[x][j] = invalids[x][checkind];
-                            invalids[x][checkind] = newval;
-                        }
-                    }
-                }
-            var middle = Math.Ceiling(Convert.ToDecimal(invalids[x].Count / 2));
-            sum += invalids[x][Convert.ToInt32(middle)];
-        }
-        return $"{sum}";
-    }
+		foreach (var invalid in invalids)
+		{
+			bool sorted = false;
+			int x = 0;
+			while (!sorted)
+			{
+				bool wasChecked = false;
+				var checkval = invalid[x];
+				var hasChecks = order.FindAll(q => q.Item2 == checkval);
+				foreach (var check in hasChecks)
+				{
+					var checkind = invalid.IndexOf(check.Item1);
+					if (checkind > x)
+					{
+						wasChecked = true;
+						invalid[x] = invalid[x] + invalid[checkind];
+						invalid[checkind] = invalid[x] - invalid[checkind];
+						invalid[x] = invalid[x] - invalid[checkind];
+					}
+				}
+
+				if (x == invalid.Count / 2 + 1) sorted = true;
+				else x = wasChecked ? x : x + 1;
+				wasChecked = false;
+			}
+			var middle = invalid.Count / 2;
+			sum += invalid[middle];
+		}
+		return $"{sum}";
+	}
 }

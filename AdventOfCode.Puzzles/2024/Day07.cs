@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Utilities;
 
 namespace AdventOfCode.Puzzles._2024;
@@ -23,32 +24,28 @@ public class Day07 : IPuzzle
 	}
     private string ProcessInput1()
     {
-        long sum = 0;
-        foreach (var value in testValues)
-        {
-            var isValid = CheckValidity(value.Item1, value.Item2, value.Item2.Count - 1, false);
-
-            if (isValid)
+		ConcurrentBag<long> result = new ConcurrentBag<long>();
+		testValues.AsParallel().ForAll(value =>
+		{
+            if (CheckValidity(value.Item1, value.Item2, value.Item2.Count - 1, false))
             {
-                sum += value.Item1;
+				result.Add(value.Item1);
             }
-        }
-        return $"{sum}";
+		});
+        return $"{result.Sum()}";
     }
     private string ProcessInput2()
-    {
-        long sum = 0;
-        foreach (var value in testValues)
-        {
-            var isValid = CheckValidity(value.Item1, value.Item2, value.Item2.Count - 1, true);
-
-            if (isValid)
-            {
-                sum += value.Item1;
-            }
-        }
-        return $"{sum}";
-    }
+	{
+		ConcurrentBag<long> result = new ConcurrentBag<long>();
+		testValues.AsParallel().ForAll(value =>
+		{
+			if (CheckValidity(value.Item1, value.Item2, value.Item2.Count - 1, true))
+			{
+				result.Add(value.Item1);
+			}
+		});
+		return $"{result.Sum()}";
+	}
 
     private bool CheckValidity(long target, List<long> numbers, int index, bool partTwo)
     {

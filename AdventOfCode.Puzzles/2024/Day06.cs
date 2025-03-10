@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Utilities;
 
 namespace AdventOfCode.Puzzles._2024;
@@ -31,62 +32,55 @@ public class Day06 : IPuzzle
 		return (part1, part2);
 	}
 
-    private string ProcessInput1()
-    {
-        var currentDirection = CompassDirection.N;
-        seenPositions.Add(startingPosition, currentDirection);
-        (int, int) nextPosition = new(0, 0);
-        if (startingPosition.Item1 - 1 > -1)
-        {
-            nextPosition = (startingPosition.Item1 - 1, startingPosition.Item2);
-        }
-        var previous = nextPosition;
-        var reachedEdge = false;
-        while (!reachedEdge)
-        {
-            if (map[nextPosition.Item1][nextPosition.Item2] == '#')
-            {
-                nextPosition = previous;
-                currentDirection = currentDirection.TurnClockwise();
-            }
-            else
-            {
-                seenPositions.TryAdd(nextPosition, currentDirection);
-            }
-            previous = nextPosition;
+	private string ProcessInput1()
+	{
+		var currentDirection = CompassDirection.N;
+		seenPositions.Add(startingPosition, currentDirection);
+		(int, int) nextPosition = new(0, 0);
+		if (startingPosition.Item1 - 1 > -1)
+		{
+			nextPosition = (startingPosition.Item1 - 1, startingPosition.Item2);
+		}
+		var previous = nextPosition;
+		var reachedEdge = false;
+		while (!reachedEdge)
+		{
+			if (map[nextPosition.Item1][nextPosition.Item2] == '#')
+			{
+				nextPosition = previous;
+				currentDirection = currentDirection.TurnClockwise();
+			}
+			else
+			{
+				seenPositions.TryAdd(nextPosition, currentDirection);
+			}
+			previous = nextPosition;
 
-            nextPosition = GetNextPosition(nextPosition, currentDirection);
-            
-            if(!IsValidPosition(nextPosition.Item1, nextPosition.Item2))
-            {
-                reachedEdge = true;
-            }
-        }
-        return $"{seenPositions.Count}";
-    }
+			nextPosition = GetNextPosition(nextPosition, currentDirection);
 
-    private string ProcessInput2()
-    {
-        int sum = 0;
-        (int, int) prevPos = startingPosition;
-        CompassDirection prevDir = CompassDirection.N;
-        foreach (var position in seenPositions)
-        {
-            if (position.Key == startingPosition) continue;
-            map[position.Key.Item1][position.Key.Item2] = '#';
-            if (IsLoop(prevPos, prevDir))
-            {
-                sum++;
-            }
-            map[position.Key.Item1][position.Key.Item2] = '.';
-            prevPos = position.Key;
-            prevDir = position.Value;
-        }
+			if (!IsValidPosition(nextPosition.Item1, nextPosition.Item2))
+			{
+				reachedEdge = true;
+			}
+		}
+		return $"{seenPositions.Count}";
+	}
 
-        return $"{sum}";
-    }
+	private string ProcessInput2()
+	{
+		ConcurrentBag<int> result = new ConcurrentBag<int>();
+		seenPositions.AsParallel().ForAll(position =>
+		{
+			if (IsLoop(startingPosition, CompassDirection.N, position.Key))
+			{
+				result.Add(1);
+			}
+		});
 
-    private bool IsLoop((int, int) start, CompassDirection lastdir)
+		return $"{result.Sum()}";
+	}
+
+	private bool IsLoop((int, int) start, CompassDirection lastdir, (int x, int y) blocked)
     {
         var visited = new Dictionary<(int, int), int>();
         var currentPosition = start;
@@ -95,7 +89,8 @@ public class Day06 : IPuzzle
 
         while (true)
         {
-            if (map[currentPosition.Item1][currentPosition.Item2] == '#')
+            if (map[currentPosition.Item1][currentPosition.Item2] == '#' || 
+				(currentPosition.Item1 == blocked.x && currentPosition.Item2 == blocked.y && blocked.y > -1 && blocked.x > -1))
             {
                 if(!visited.TryAdd(currentPosition, 1))
                 {
